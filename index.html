@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Finamex Dashboard Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a 393×852 phone surface; abstract white blocks on an off-white page; liquid-glass nav floating over the content. */
+:root{
+  --page:#EEEFF2;        /* off-white, slight cool hue */
+  --block:#FFFFFF;
+  --ink:#0E0F12;
+  --ink-2:#6B6F78;
+  --ink-3:#A5A9B2;
+  --ghost:#EDEEF1;       /* placeholder shapes */
+  --ghost-2:#E2E4E9;
+  --up:#1F8A4C;
+  --glass:rgba(255,255,255,.62);
+  --glass-edge:rgba(255,255,255,.85);
+  --glass-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+  --badge:#D8342C;
+  --font:"Instrument Sans",-apple-system,"SF Pro Text",Segoe UI,Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --page:#121317; --block:#1C1D22; --ink:#F2F3F5; --ink-2:#9A9EA8; --ink-3:#5F636C; --ghost:#26272D; --ghost-2:#303239; --up:#4FCB7F;
+  --glass:rgba(40,42,50,.55); --glass-edge:rgba(255,255,255,.14); --glass-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --page:#121317; --block:#1C1D22; --ink:#F2F3F5; --ink-2:#9A9EA8; --ink-3:#5F636C; --ghost:#26272D; --ghost-2:#303239; --up:#4FCB7F;
+  --glass:rgba(40,42,50,.55); --glass-edge:rgba(255,255,255,.14); --glass-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12); color-scheme:dark }
+
+html,body{height:100%}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,.tab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* desktop stage: phone centred; phone width: fill */
+.stage{min-height:100%;display:flex;flex-direction:column;align-items:center;gap:18px;padding-block:28px}
+.phone{position:relative;width:393px;max-width:100%;height:852px;border-radius:50px;background:var(--page);overflow:hidden;
+  box-shadow:0 0 0 1px rgba(0,0,0,.06),0 30px 80px rgba(20,24,40,.18)}
+@media (max-width:440px){ .stage{padding-block:0} .phone{width:100%;height:100%;min-height:100vh;border-radius:0;box-shadow:none} body{padding-left:0;padding-right:0} }
+
+/* controls above the phone (prototype only) */
+.ctl{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--ink-2);flex-wrap:wrap;justify-content:center}
+.seg{display:inline-flex;background:var(--ghost-2);border-radius:999px;padding:3px}
+.seg button{padding:6px 12px;border-radius:999px;font-weight:500;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--block);color:var(--ink)}
+
+/* scroll surface */
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:116px 16px 150px;scroll-behavior:smooth}
+.screen::-webkit-scrollbar{display:none}
+.view[hidden]{display:none}
+
+/* liquid glass */
+.glass{background:var(--glass);backdrop-filter:blur(22px) saturate(180%);-webkit-backdrop-filter:blur(22px) saturate(180%);
+  border:1px solid var(--glass-edge);box-shadow:var(--glass-shadow)}
+.topbar{position:absolute;top:0;left:0;right:0;padding:58px 16px 0;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:5}
+.topbar>*{pointer-events:auto}
+.circ{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;position:relative}
+.circ svg{width:22px;height:22px}
+.badge{position:absolute;top:-4px;right:-6px;background:var(--badge);color:#fff;font-size:12px;font-weight:700;padding:3px 7px;border-radius:999px;min-width:26px;text-align:center}
+.statusbar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:15px;font-weight:600;z-index:6;pointer-events:none}
+.statusbar .dots{display:flex;gap:5px}.statusbar .dots i{width:9px;height:9px;border-radius:50%;background:var(--ink);display:block}
+
+/* bottom nav */
+.dock{position:absolute;left:0;right:0;bottom:0;padding:0 14px 20px;z-index:5;display:flex;flex-direction:column;gap:12px;pointer-events:none}
+.dock>*{pointer-events:auto}
+.actions{display:flex;gap:10px;padding:0 6px}
+.pill{flex:1;height:54px;border-radius:999px;display:grid;place-items:center;font-weight:600;font-size:17px}
+.pill.primary{background:var(--ink);color:var(--page)}
+.tabs{height:78px;border-radius:999px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:999px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.tab svg{width:24px;height:24px}
+.tab[aria-selected="true"]{background:var(--block);color:var(--ink)}
+
+/* blocks */
+.page-title{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:0 0 4px 4px;text-wrap:balance}
+.page-sub{font-size:14px;color:var(--ink-2);margin:0 0 18px 4px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.block{background:var(--block);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px;text-align:left;width:100%;
+  transition:transform .12s ease}
+.block:active{transform:scale(.985)}
+.block .row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.block h2{font-size:19px;font-weight:600;margin:0;letter-spacing:-.01em}
+.block p{margin:0;font-size:14px;line-height:1.4;color:var(--ink-2)}
+.block .arrow{color:var(--ink-3);flex:none;margin-top:2px}
+.block .arrow svg{width:20px;height:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.headline .num{font-size:40px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.05;margin-top:6px}
+.headline .delta{color:var(--up);font-weight:600;font-size:15px}
+.chips{display:flex;gap:6px;margin-top:10px}
+.chips span{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--ghost);color:var(--ink-2)}
+.chips span.on{background:var(--ink);color:var(--page)}
+.hint{font-size:11px;color:var(--ink-3)}
+
+/* fidelity B: placeholder shapes */
+.ph{display:none;margin-top:10px}
+[data-fidelity="b"] .ph{display:block}
+.ph-curve{height:84px;border-radius:12px;background:
+  linear-gradient(180deg,transparent 0 62%,var(--ghost) 62% 64%,transparent 64%) ,
+  linear-gradient(180deg,transparent 0 84%,var(--ghost) 84% 86%,transparent 86%) ,var(--block);position:relative;overflow:hidden}
+.ph-curve svg{position:absolute;inset:0;width:100%;height:100%}
+.ph-rows{display:flex;flex-direction:column;gap:10px}
+.ph-row{display:flex;align-items:center;gap:12px}
+.ph-row i{width:34px;height:34px;border-radius:50%;background:var(--ghost);flex:none}
+.ph-row b{height:10px;border-radius:5px;background:var(--ghost);flex:1}
+.ph-row b.s{flex:0 0 56px;background:var(--ghost-2)}
+.ph-cards{display:flex;gap:10px;overflow:hidden}
+.ph-cards i{flex:0 0 124px;height:72px;border-radius:14px;background:var(--ghost)}
+.ph-bar{height:10px;border-radius:5px;background:var(--ghost);width:70%}
+.ph-btn{height:40px;border-radius:999px;background:var(--ghost-2);width:46%}
+.ph-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ph-grid i{height:64px;border-radius:14px;background:var(--ghost)}
+@media (prefers-reduced-motion:reduce){ .screen{scroll-behavior:auto} .block{transition:none} }
+
+/* auth screens */
+.view.auth{display:flex;flex-direction:column;min-height:calc(852px - 116px - 120px);justify-content:space-between;gap:24px}
+.view.auth[hidden]{display:none}
+.auth-top,.auth-bottom{display:flex;flex-direction:column;gap:12px}
+.auth-bottom{padding:0 4px}
+.auth .pill{flex:none;height:56px;min-height:56px;width:100%;font-size:17px}
+.pill{height:54px;font-size:17px}
+.link{font-size:15px;font-weight:500;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;padding:8px 4px}
+.link.quiet{text-decoration:none;color:var(--ink-2);font-size:17px;text-align:center;padding:12px 4px}
+.welcome-hero{justify-content:center;flex:1;gap:14px;padding:0 4px}
+.eyebrow-lg{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.hero-title{font-size:56px;font-weight:600;letter-spacing:-.03em;line-height:1;margin:0}
+.hero-sub{font-size:22px;line-height:1.3;margin:4px 0 10px;max-width:22ch}
+.trust{display:flex;flex-direction:column;gap:14px;color:var(--ink-2);font-size:16px}
+.trust div{display:flex;align-items:center;gap:10px}
+.trust svg{width:20px;height:20px;flex:none}
+.inline-links{display:flex;justify-content:space-between;padding:0 2px}
+.footer-links{display:flex;justify-content:center;gap:8px;color:var(--ink-3);font-size:13px;align-items:center}
+.footer-links .link{font-size:13px;color:var(--ink-3);padding:4px}
+.block.carousel{min-height:160px;align-items:center;justify-content:center;gap:16px}
+.block.carousel .row{justify-content:center}
+.block.carousel h2{color:var(--ink-3);font-weight:500}
+.dots-row{display:flex;gap:6px}.dots-row i{width:6px;height:6px;border-radius:50%;background:var(--ghost-2)}.dots-row i.on{background:var(--ink)}
+.faceid{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-3);padding:4px 4px 0}
+.faceid svg{width:18px;height:18px;flex:none}
+.block.field{min-height:60px;background:var(--block);box-shadow:inset 0 0 0 1px var(--ghost-2)}
+.block.field h2{font-weight:500;color:var(--ink-3);font-size:16px}
+.phone.auth .dock{display:none}
+.phone.auth #bellBtn{display:none}
+.phone.welcome #menuBtn{display:none}
+
+/* 360+ */
+.progress{height:6px;border-radius:3px;background:var(--ghost-2);overflow:hidden;width:100%;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.goal-card{gap:4px}
+#view-360 .pill.primary,#view-goal .pill{flex:none;height:54px;width:100%;min-height:54px}
+.pair{display:flex;gap:10px}
+.pair .pill{flex:1!important;width:auto!important}
+#view-goal .goal-head .num{display:block!important;font-size:34px}
+#view-goal .goal-head .goal-meta{display:block!important;color:var(--ink-2);font-size:14px;margin-top:4px}
+#view-goal .goal-head .eyebrow{display:block}
+#view-goal .goal-head{gap:6px;justify-content:flex-start}
+.step-count{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-left:4px}
+.flow .block.choice{min-height:72px}
+.flow .block.choice[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--ink)}
+.flow .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.flow .grid2 .block{min-height:96px;align-items:flex-start;justify-content:flex-end}
+.flow .big-amount{font-size:44px;font-weight:700;letter-spacing:-.03em;padding:8px 4px 0;font-variant-numeric:tabular-nums}
+.flow .slider{height:6px;border-radius:3px;background:var(--ghost-2);position:relative;margin:14px 8px 6px}
+.flow .slider i{position:absolute;left:38%;top:-9px;width:24px;height:24px;border-radius:50%;background:var(--ink)}
+.flow .done{align-items:center;text-align:center;gap:12px;min-height:160px;justify-content:center}
+.flow .done .tick{width:56px;height:56px;border-radius:50%;background:var(--ink);display:grid;place-items:center;color:var(--page);font-size:26px}
+
+/* explore: filterable list */
+.filters{display:flex;gap:6px;margin:10px 0 16px 4px;overflow-x:auto;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{flex:none;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;background:var(--ghost-2);color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--page)}
+.group{display:flex;flex-direction:column;gap:8px}
+.group[hidden]{display:none}
+.group-label{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-left:4px}
+.list{background:var(--block);border-radius:14px;overflow:hidden}
+.item{width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 20px;font-size:16px;font-weight:500;text-align:left}
+.item+.item{border-top:1px solid var(--ghost)}
+.item i{width:8px;height:8px;border-right:2px solid var(--ink-3);border-bottom:2px solid var(--ink-3);transform:rotate(-45deg);margin-right:4px}
+.item:active{background:var(--ghost)}
+
+/* barebones: labels only */
+.block p,.block .ph,.block .chips,.block .num,.block .hint,.page-sub,.ctl,.actions{display:none!important}
+.block{padding:22px 20px;min-height:64px;justify-content:center}
+.block .row{align-items:center}
+.block .eyebrow{display:none}
+.block.headline{min-height:96px}
+#view-home .block.headline{gap:10px;justify-content:flex-start}
+#view-home .block.headline .num{display:block!important;font-size:38px}
+#view-home .block.headline .ph.ph-curve{display:block!important;margin-top:2px;background:transparent}
+#view-home .block.headline .ph-curve svg path:first-of-type{stroke:var(--ink)}
+#view-home .block.headline .ph-curve svg circle{fill:var(--ink)}
+.screen{padding-bottom:120px}
+</style>
+
+</head>
+<body>
+<div class="stage">
+  <div class="ctl" id="ctl">
+    <span>Blocks</span>
+    <div class="seg" role="group" aria-label="Block fidelity">
+      <button id="fidA" aria-pressed="true">A · title + line</button>
+      <button id="fidB" aria-pressed="false">B · + placeholder shapes</button>
+    </div>
+  </div>
+
+  <div class="phone" id="phone" data-fidelity="a">
+    <div class="statusbar"><span>9:41</span><span class="dots"><i></i><i></i><i></i></span></div>
+
+    <div class="topbar">
+      <button class="glass circ" aria-label="Menu" id="menuBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <button class="glass circ" aria-label="Notifications, 9 unread" id="bellBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+        <span class="badge">9+</span>
+      </button>
+    </div>
+
+    <div class="screen" id="screen">
+
+      <!-- WELCOME -->
+      <section class="view auth" id="view-welcome" hidden>
+        <div class="auth-top welcome-hero">
+          <div class="eyebrow-lg">Casa de Bolsa Finamex</div>
+          <h1 class="hero-title">Since 1973</h1>
+          <p class="hero-sub">Fifty years looking after Mexican money. Now in your pocket.</p>
+          <div class="trust">
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>Regulated by the CNBV</div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>Member of the BMV</div>
+          </div>
+        </div>
+        <div class="auth-bottom">
+          <button class="pill primary" data-go="register">Get started</button>
+          <button class="link quiet" data-go="signin">I already have an account</button>
+          <div class="footer-links"><button class="link" data-go="legal">Privacy Notice</button><span>·</span><button class="link" data-go="legal">Terms &amp; Conditions</button></div>
+        </div>
+      </section>
+
+      <!-- SIGN IN -->
+      <section class="view auth" id="view-signin" hidden>
+        <div class="auth-top">
+          <h1 class="page-title">Sign in</h1>
+          <div class="stack">
+            <div class="block field"><div class="row"><h2>Username</h2></div></div>
+            <div class="block field"><div class="row"><h2>Password</h2></div></div>
+            <div class="inline-links"><button class="link" data-go="recover">Forgot password</button><button class="link" data-go="recover">Forgot username</button></div>
+            <div class="faceid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M9 9.5v1M15 9.5v1M12 9v4h-1M9.5 15a3.5 3.5 0 0 0 5 0"/></svg>Face ID prompts automatically on supported devices</div>
+          </div>
+        </div>
+        <div class="auth-bottom">
+          <button class="pill primary" data-go="location">Sign in</button>
+          <button class="link quiet" data-go="createaccess">Have a contract but no user? Create online access</button>
+          <div class="footer-links"><button class="link" data-go="legal">Privacy Notice</button><span>·</span><button class="link" data-go="legal">Terms &amp; Conditions</button></div>
+        </div>
+      </section>
+
+      <!-- LOCATION CONSENT -->
+      <section class="view auth" id="view-location" hidden>
+        <div class="auth-top">
+          <h1 class="page-title">Allow location</h1>
+          <div class="stack">
+            <div class="block"><div class="row"><h2>Why we ask</h2></div></div>
+          </div>
+        </div>
+        <div class="auth-bottom">
+          <button class="pill primary" data-go="home">Allow</button>
+          <button class="glass pill" data-go="notauthorised">Don’t allow</button>
+        </div>
+      </section>
+
+      <!-- HOME -->
+      <section class="view" id="view-home">
+        <h1 class="page-title">Home</h1>
+        <p class="page-sub">How are my investments doing, and what should I do next.</p>
+        <div class="stack">
+          <button class="block headline" data-go="portfolio">
+            <span class="eyebrow">Total wealth</span>
+            <div class="row"><div class="num">$128,400</div></div>
+            <p><span class="delta">↗ $1,240 earned</span> this month, excluding deposits and withdrawals. <span class="hint">Example figures.</span></p>
+            <div class="chips"><span>1W</span><span class="on">1M</span><span>YTD</span><span>1Y</span><span>All</span></div>
+            <div class="ph ph-curve"><svg viewBox="0 0 320 84" preserveAspectRatio="none"><path d="M0 60 C 40 58, 60 40, 90 44 S 150 30, 180 34 S 240 18, 280 22 S 310 14, 320 12" fill="none" stroke="var(--ghost-2)" stroke-width="3"/><circle cx="120" cy="38" r="3" fill="var(--ghost-2)"/><circle cx="230" cy="24" r="3" fill="var(--ghost-2)"/></svg></div>
+          </button>
+
+          <button class="block" data-go="fund">
+            <div class="row"><div><span class="eyebrow">Buying power</span><h2>$6,250 available</h2></div><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Cash ready to invest or withdraw. Fund the account from your bank by SPEI.</p>
+            <div class="ph"><div class="ph-btn"></div></div>
+          </button>
+
+          <button class="block" data-go="360">
+            <div class="row"><div><span class="eyebrow">Next step</span><h2>Add $500 a month</h2></div><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Your “Casa” goal would be reached 14 months sooner. One nudge, framed as a trade.</p>
+            <div class="ph"><div class="ph-bar"></div></div>
+          </button>
+
+          <button class="block" data-go="360">
+            <div class="row"><h2>360+ goals</h2><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Managed portfolios built around a goal. Casa, Retiro, and Just grow it.</p>
+            <div class="ph ph-cards"><i></i><i></i><i></i></div>
+          </button>
+
+          <button class="block" data-go="cetes">
+            <div class="row"><h2>Cetes</h2><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Government bonds, bought at auction. Your position, open orders and the next auction.</p>
+            <div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div><div class="ph-row"><i></i><b></b><b class="s"></b></div></div>
+          </button>
+
+          <button class="block" data-go="pesos">
+            <div class="row"><h2>Pesos</h2><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Fixed-term deposits in pesos. Rate and maturity date shown before you commit.</p>
+            <div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div></div>
+          </button>
+
+          <button class="block" data-go="funds">
+            <div class="row"><h2>Funds</h2><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Investment funds you can buy and sell by units. Filter the list, then open a fund.</p>
+            <div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div><div class="ph-row"><i></i><b></b><b class="s"></b></div></div>
+          </button>
+
+          <button class="block" data-go="equities">
+            <div class="row"><h2>Equities</h2><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Mexican stocks with live quotes. Needs the trading agreement before your first order.</p>
+            <div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div><div class="ph-row"><i></i><b></b><b class="s"></b></div></div>
+          </button>
+
+          <button class="block" data-go="activity">
+            <div class="row"><h2>Recent activity</h2><span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+            <p>Deposits, withdrawals and orders from the last few days.</p>
+            <div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div><div class="ph-row"><i></i><b></b><b class="s"></b></div><div class="ph-row"><i></i><b></b><b class="s"></b></div></div>
+          </button>
+        </div>
+      </section>
+
+      <!-- PORTFOLIO -->
+      <section class="view" id="view-portfolio" hidden>
+        <h1 class="page-title">Portfolio</h1>
+        <p class="page-sub">Everything you hold, by product and by market.</p>
+        <div class="stack">
+          <button class="block headline"><span class="eyebrow">Position</span><div class="num">$122,150</div><p>As of today. Switch to a monthly view or another contract.</p><div class="chips"><span class="on">Today</span><span>By month</span></div><div class="ph ph-curve"></div></button>
+          <button class="block"><div class="row"><h2>Composition</h2></div><p>By instrument and by market.</p><div class="ph ph-grid"><i></i><i></i></div></button>
+          <button class="block" data-go="cetes"><div class="row"><h2>Cetes</h2></div><p>Position and open orders.</p><div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div></div></button>
+          <button class="block" data-go="pesos"><div class="row"><h2>Pesos</h2></div><p>Active term deposits.</p><div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div></div></button>
+          <button class="block" data-go="funds"><div class="row"><h2>Funds</h2></div><p>Position per fund and its operations.</p><div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div></div></button>
+          <button class="block" data-go="equities"><div class="row"><h2>Equities</h2></div><p>By ticker with current valuation.</p><div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div></div></button>
+          <button class="block" data-go="activity"><div class="row"><h2>Transactions</h2></div><p>Deposits, withdrawals, portfolio and live movements.</p><div class="ph ph-rows"><div class="ph-row"><i></i><b></b><b class="s"></b></div><div class="ph-row"><i></i><b></b><b class="s"></b></div></div></button>
+        </div>
+      </section>
+
+      <!-- 360+ -->
+      <section class="view" id="view-360" hidden>
+        <h1 class="page-title">360+</h1>
+        <p class="page-sub">Managed portfolios built around a goal.</p>
+        <div class="stack">
+          <button class="block headline"><span class="eyebrow">Across goals</span><div class="num">$48,900</div><p><span class="delta">↗ $620 earned</span> this month.</p><div class="ph ph-curve"></div></button>
+          <button class="block goal-card" data-goal="Casa"><div class="row"><h2>Casa</h2></div><div class="progress"><i style="width:62%"></i></div></button>
+          <button class="block goal-card" data-goal="Retiro"><div class="row"><h2>Retiro</h2></div><div class="progress"><i style="width:18%"></i></div></button>
+          <button class="block goal-card" data-goal="Just grow it"><div class="row"><h2>Just grow it</h2></div><div class="progress"><i style="width:40%"></i></div></button>
+          <button class="pill primary" data-flow="newgoal">New goal</button>
+        </div>
+      </section>
+
+      <!-- GOAL DETAIL -->
+      <section class="view" id="view-goal" hidden>
+        <h1 class="page-title" id="goalTitle">Casa</h1>
+        <div class="stack">
+          <button class="block headline goal-head"><span class="eyebrow">Progress</span><div class="num">$248,000</div><div class="progress"><i style="width:62%"></i></div><p class="goal-meta">62% of $400,000 · Conservative strategy</p></button>
+          <button class="block"><div class="row"><h2>Growth (yearly bars)</h2></div></button>
+          <button class="block"><div class="row"><h2>Insight &amp; next step</h2></div></button>
+          <button class="block" data-go="strategy"><div class="row"><h2>Strategy &amp; funds</h2></div></button>
+          <div class="pair">
+            <button class="pill primary" data-flow="addmoney">Add money</button>
+            <button class="glass pill" data-flow="withdraw">Withdraw</button>
+          </div>
+          <button class="block" data-flow="monthly"><div class="row"><h2>Monthly contribution</h2></div></button>
+          <button class="block" data-flow="editgoal"><div class="row"><h2>Edit goal</h2></div></button>
+          <button class="block" data-flow="deletegoal"><div class="row"><h2>Delete goal</h2></div></button>
+        </div>
+      </section>
+
+      <!-- GENERIC FLOW STEP -->
+      <section class="view auth flow" id="view-flow" hidden>
+        <div class="auth-top">
+          <div class="step-count" id="flowStep">Step 1 of 8</div>
+          <h1 class="page-title" id="flowTitle">Pick a goal</h1>
+          <div class="stack" id="flowStack"></div>
+        </div>
+        <div class="auth-bottom">
+          <button class="pill primary" id="flowCta">Continue</button>
+          <button class="link quiet" id="flowSkip" hidden>Skip</button>
+        </div>
+      </section>
+
+      <!-- EXPLORE -->
+      <section class="view" id="view-explore" hidden>
+        <h1 class="page-title">Explore</h1>
+        <div class="filters" role="group" aria-label="Filter products">
+          <button class="chip" data-filter="all" aria-pressed="true">All</button>
+          <button class="chip" data-filter="cetes" aria-pressed="false">Cetes</button>
+          <button class="chip" data-filter="pesos" aria-pressed="false">Pesos</button>
+          <button class="chip" data-filter="funds" aria-pressed="false">Funds</button>
+          <button class="chip" data-filter="equities" aria-pressed="false">Equities</button>
+        </div>
+        <div class="stack" id="exploreList">
+          <div class="group" data-group="cetes"><div class="group-label">Cetes</div><div class="list">
+            <button class="item" data-go="cetes"><span>List item</span><i></i></button>
+            <button class="item" data-go="cetes"><span>List item</span><i></i></button>
+          </div></div>
+          <div class="group" data-group="pesos"><div class="group-label">Pesos</div><div class="list">
+            <button class="item" data-go="pesos"><span>List item</span><i></i></button>
+            <button class="item" data-go="pesos"><span>List item</span><i></i></button>
+          </div></div>
+          <div class="group" data-group="funds"><div class="group-label">Funds</div><div class="list">
+            <button class="item" data-go="funds"><span>List item</span><i></i></button>
+            <button class="item" data-go="funds"><span>List item</span><i></i></button>
+            <button class="item" data-go="funds"><span>List item</span><i></i></button>
+          </div></div>
+          <div class="group" data-group="equities"><div class="group-label">Equities</div><div class="list">
+            <button class="item" data-go="equities"><span>List item</span><i></i></button>
+            <button class="item" data-go="equities"><span>List item</span><i></i></button>
+            <button class="item" data-go="equities"><span>List item</span><i></i></button>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- generic detail stub -->
+      <section class="view" id="view-detail" hidden>
+        <h1 class="page-title" id="detailTitle">Detail</h1>
+        <p class="page-sub" id="detailSub">Template stub.</p>
+        <div class="stack" id="detailStack"></div>
+      </section>
+    </div>
+
+    <div class="dock">
+      <div class="actions">
+        <button class="glass pill" data-go="fund">Fund</button>
+        <button class="pill primary" data-go="explore">Invest</button>
+      </div>
+      <nav class="glass tabs" role="tablist" aria-label="Main">
+        <button class="tab" role="tab" aria-selected="true" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="portfolio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Portfolio</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="360"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>360+</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="explore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Explore</button>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const phone=document.getElementById('phone'), screen=document.getElementById('screen');
+  const views={welcome:'view-welcome',signin:'view-signin',location:'view-location',home:'view-home',portfolio:'view-portfolio','360':'view-360',explore:'view-explore',detail:'view-detail',goal:'view-goal',flow:'view-flow'};
+  const authViews={welcome:true,signin:true,location:true,flow:true};
+
+  // ---- 360+ flows. Each step: title, kind, labels, cta, skip (label-only steps; v2 goal-first order)
+  const flows={
+    newgoal:{back:'360',done:'goal',steps:[
+      {title:'Pick a goal',kind:'grid',labels:['Casa','Retiro','Big trip','Car','Just grow it','Add my own'],cta:'Continue'},
+      {title:'Target amount',kind:'amount',amount:'$400,000',cta:'Continue',skip:'No target, just grow it'},
+      {title:'Timing & monthly',kind:'fields',labels:['How long','Starting deposit','Monthly (derived)'],cta:'Continue'},
+      {title:'Risk feel',kind:'choice',labels:['Keep it steady','Some ups and downs','Go for growth'],cta:'See my strategy',note:'Two quick taps. Result previews live.'},
+      {title:'Your strategy',kind:'fields',labels:['Conservative · 3 funds','Expected range','Funds in this strategy'],cta:'Continue'},
+      {title:'Accept documents',kind:'fields',labels:['Chapter III Bis Addendum','Portfolio Selection Sheet','General Framework of Action','Investor Profile Questionnaire'],cta:'Sign with code',note:'First goal only.'},
+      {title:'Security code',kind:'fields',labels:['6-digit code (SMS or email)'],cta:'Confirm'},
+      {title:'Goal created',kind:'done',labels:['Casa is set up'],cta:'Go to goal'},
+    ]},
+    addmoney:{back:'goal',done:'goal',steps:[
+      {title:'Add money',kind:'amount',amount:'$5,000',cta:'Continue',note:'Available cash: $6,250'},
+      {title:'Summary & confirm',kind:'fields',labels:['Amount','Goal','Funds bought'],cta:'Confirm'},
+      {title:'Added',kind:'done',labels:['$5,000 added to Casa'],cta:'Back to goal'},
+    ]},
+    withdraw:{back:'goal',done:'goal',steps:[
+      {title:'Withdraw',kind:'amount',amount:'$1,000',cta:'Continue'},
+      {title:'Summary & confirm',kind:'fields',labels:['Amount','Goal','Funds sold'],cta:'Confirm'},
+      {title:'Withdrawn',kind:'done',labels:['$1,000 on its way to cash'],cta:'Back to goal'},
+    ]},
+    monthly:{back:'goal',done:'goal',steps:[
+      {title:'Monthly contribution',kind:'fields',labels:['Amount per month','Day of the month','Source account'],cta:'Continue'},
+      {title:'Security code',kind:'fields',labels:['6-digit code (SMS or email)'],cta:'Confirm'},
+      {title:'Confirmed',kind:'done',labels:['$500 every month, from the 1st'],cta:'Back to goal'},
+    ]},
+    editgoal:{back:'goal',done:'goal',steps:[
+      {title:'Edit goal',kind:'fields',labels:['Name','Target amount','Timing'],cta:'Save',note:'Leaving without saving asks to discard changes.'},
+      {title:'Saved',kind:'done',labels:['Casa updated'],cta:'Back to goal'},
+    ]},
+    deletegoal:{back:'goal',done:'360',steps:[
+      {title:'Delete goal?',kind:'fields',labels:['Money moves back to cash','This can’t be undone'],cta:'Delete goal'},
+      {title:'Deleted',kind:'done',labels:['Casa removed'],cta:'Back to 360+'},
+    ]},
+  };
+  let flow=null, step=0;
+  function startFlow(name){ flow=flows[name]; step=0; renderStep(); }
+  function renderStep(){
+    const s=flow.steps[step];
+    document.getElementById('flowStep').textContent='Step '+(step+1)+' of '+flow.steps.length;
+    document.getElementById('flowTitle').textContent=s.title;
+    const st=document.getElementById('flowStack'); st.innerHTML='';
+    const mk=(cls,label)=>{ const b=document.createElement('button'); b.className='block '+cls; b.innerHTML='<div class="row"><h2></h2></div>'; b.querySelector('h2').textContent=label; return b; };
+    if(s.note){ const n=document.createElement('div'); n.className='step-count'; n.style.textTransform='none'; n.style.letterSpacing='0'; n.textContent=s.note; st.appendChild(n); }
+    if(s.kind==='grid'){ const g=document.createElement('div'); g.className='grid2'; s.labels.forEach((l,i)=>{ const b=mk('choice',l); b.setAttribute('aria-pressed',i===0); b.onclick=()=>{ g.querySelectorAll('.block').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); }; g.appendChild(b); }); st.appendChild(g); }
+    if(s.kind==='choice'){ s.labels.forEach((l,i)=>{ const b=mk('choice',l); b.setAttribute('aria-pressed',i===0); b.onclick=()=>{ st.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); }; st.appendChild(b); }); }
+    if(s.kind==='fields'){ s.labels.forEach(l=>st.appendChild(mk('field',l))); }
+    if(s.kind==='amount'){ const b=document.createElement('div'); b.className='block'; b.innerHTML='<div class="big-amount"></div><div class="slider"><i></i></div>'; b.querySelector('.big-amount').textContent=s.amount; st.appendChild(b); }
+    if(s.kind==='done'){ const b=document.createElement('div'); b.className='block done'; b.innerHTML='<div class="tick">✓</div><div class="row"><h2></h2></div>'; b.querySelector('h2').textContent=s.labels[0]; st.appendChild(b); }
+    const cta=document.getElementById('flowCta'); cta.textContent=s.cta;
+    const sk=document.getElementById('flowSkip'); sk.hidden=!s.skip; if(s.skip) sk.textContent=s.skip;
+    show('flow');
+  }
+  function nextStep(){ if(step<flow.steps.length-1){ step++; renderStep(); } else { const d=flow.done; flow=null; show(d); } }
+  function flowBack(){ if(step>0){ step--; renderStep(); } else { const b=flow.back; flow=null; show(b); } }
+  const backTo={signin:'welcome',location:'signin'};
+  const stubs={
+    cetes:['Cetes','Product info, your position and open orders.',[['Next auction','Terms on offer and the cut-off time.'],['Your position','Holdings and reinvestment setting.'],['Buy','Term and amount, then confirm.']]],
+    pesos:['Pesos','Fixed-term deposits.',[['Open a deposit','Amount and term; rate and maturity before you confirm.'],['Active deposits','Each with its own detail.']]],
+    funds:['Funds','Browse and open a fund.',[['Fund list','Filters, then detail.'],['Fund detail','Chart by day, week, month, six months, year.']]],
+    equities:['Equities','Search, watchlist, ticker detail.',[['Search','By name or symbol.'],['Watchlist','Live prices, reorder.'],['Activate trading','Agreement and security code, first time only.']]],
+    fund:['Fund account','Move money in.',[['Deposit instructions','Your Finamex CLABE, copy and transfer by SPEI.'],['Register a deposit','Amount, source account, date.'],['Recurring','Weekly, fortnightly, monthly or a day.']]],
+    activity:['Activity','Transactions, split by type.',[['Deposits',''],['Withdrawals',''],['Portfolio',''],['Live movements','']]],
+    menu:['Menu','Everything else, filtered by contract type.',[['Profile and security',''],['Beneficiaries',''],['Statements and documents',''],['Help',''],['Sign out','']]],
+    notifications:['Notifications','Notices and movements, with a read marker.',[['Notices',''],['Movements','']]],
+    register:['Register','Create your user to begin onboarding.',[['Basic data, username, password',''],['Accept privacy notice and terms',''],['Confirm contact with a code','']]],
+    createaccess:['Create online access','For clients with a contract but no user.',[['Contract type and person type',''],['Contract number',''],['Verify identity with contract data',''],['Set username and password','']]],
+    recover:['Recover access','Password or username.',[['Choose what to recover',''],['SMS or email',''],['Enter the code',''],['Set a new password','']]],
+    legal:['Legal','Served from the server, no sign-in needed.',[['Privacy Notice',''],['Terms and Conditions','']]],
+    notauthorised:['Location not authorised','No consent, no access.',[['Allow location in Settings',''],['Try again','']]],
+    strategy:['Strategy & funds','Conservative. Suggested from your profile.',[['Allocation',''],['Fund 1',''],['Fund 2',''],['Fund 3','']]]
+  };
+  let stubBack='home';
+  // labels only: every block shows one label (its eyebrow name where it has one)
+  document.querySelectorAll('.block').forEach(b=>{
+    const eb=b.querySelector('.eyebrow'); let h=b.querySelector('h2');
+    if(eb){ if(!h){ h=document.createElement('h2'); const row=document.createElement('div'); row.className='row'; row.appendChild(h); b.insertBefore(row,b.firstChild);} h.textContent=eb.textContent; }
+  });
+  const ICON_MENU='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+  const ICON_BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+  let lastTab='home', current='welcome';
+  function show(key){
+    Object.values(views).forEach(id=>document.getElementById(id).hidden=true);
+    document.getElementById(views[key]).hidden=false;
+    document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===key?'true':'false'));
+    const isAuth=!!authViews[key];
+    phone.classList.toggle('auth', isAuth);
+    phone.classList.toggle('welcome', key==='welcome');
+    const deep = key==='detail' || key==='goal' || key==='flow' || !!backTo[key];
+    const mb=document.getElementById('menuBtn');
+    mb.innerHTML = deep?ICON_BACK:ICON_MENU; mb.setAttribute('aria-label', deep?'Back':'Menu'); mb.dataset.mode=deep?'back':'menu';
+    if(!deep && !isAuth) lastTab=key;
+    current=key;
+    screen.scrollTop=0;
+  }
+  function goBack(){
+    if(current==='flow' && flow) flowBack();
+    else if(current==='goal') show('360');
+    else if(current==='detail') show(stubBack);
+    else if(backTo[current]) show(backTo[current]);
+    else show(lastTab);
+  }
+  function stub(key){
+    const s=stubs[key]; if(!s) return;
+    stubBack = authViews[current] ? current : lastTab;
+    if(key==='notauthorised') stubBack='signin';
+    document.getElementById('detailTitle').textContent=s[0];
+    document.getElementById('detailSub').textContent=s[1];
+    const st=document.getElementById('detailStack'); st.innerHTML='';
+    s[2].forEach(([t,d])=>{ const b=document.createElement('button'); b.className='block'; b.innerHTML='<div class="row"><h2></h2></div><p></p><div class="ph ph-bar"></div>'; b.querySelector('h2').textContent=t; b.querySelector('p').textContent=d; if(t==='Sign out') b.onclick=()=>show('welcome'); if(t==='Try again') b.onclick=()=>show('location'); st.appendChild(b); });
+    show('detail');
+    phone.classList.toggle('auth', !!authViews[stubBack]);
+  }
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>show(t.dataset.tab)));
+  document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',e=>{ const k=b.dataset.go; if(views[k]) show(k); else stub(k); }));
+  document.getElementById('menuBtn').onclick=function(){ this.dataset.mode==='back' ? goBack() : stub('menu'); };
+  document.getElementById('bellBtn').onclick=()=>stub('notifications');
+  document.querySelectorAll('[data-flow]').forEach(b=>b.addEventListener('click',()=>startFlow(b.dataset.flow)));
+  document.querySelectorAll('.goal-card').forEach(b=>b.addEventListener('click',()=>{ document.getElementById('goalTitle').textContent=b.dataset.goal; show('goal'); }));
+  document.getElementById('flowCta').onclick=nextStep;
+  document.getElementById('flowSkip').onclick=()=>{ step++; renderStep(); };
+  document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+    const f=c.dataset.filter;
+    document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed', x===c?'true':'false'));
+    document.querySelectorAll('#exploreList .group').forEach(g=>g.hidden = !(f==='all' || g.dataset.group===f));
+  }));
+  show('welcome');
+})();
+</script>
+
+</body>
+</html>
